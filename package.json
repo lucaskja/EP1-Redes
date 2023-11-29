@@ -1,0 +1,20 @@
+{
+  "name": "ep1-redes",
+  "version": "1.0.0",
+  "description": "ep1 redes",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "server": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lucaskja/EP1-Redes.git"
+  },
+  "author": "Guilherme Campos Silva Lemes Prestes, Lucas Kledeglau Jahchan Alves, Vinicius Kazuo Inagaki",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lucaskja/EP1-Redes/issues"
+  },
+  "homepage": "https://github.com/lucaskja/EP1-Redes#readme"
+}
