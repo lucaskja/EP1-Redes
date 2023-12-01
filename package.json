@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/lucaskja/EP1-Redes/issues"
   },
-  "homepage": "https://github.com/lucaskja/EP1-Redes#readme"
+  "homepage": "https://github.com/lucaskja/EP1-Redes#readme",
+  "dependencies": {
+    "ws": "^8.14.2"
+  }
 }
