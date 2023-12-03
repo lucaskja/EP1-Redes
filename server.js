@@ -1,6 +1,6 @@
 const { createServer } = require('node:http')
 const { readFile } = require('node:fs')
-const { WebSocketServer } = require('ws')
+const { WebSocketServer, WebSocket } = require('ws')
 
 const responde = (res, tipoConteudo, conteudo) => {
     res.writeHead(200, {
@@ -82,7 +82,27 @@ const lidaRequisicao = (req, res) => {
 const server = createServer((req, res) => {
     lidaRequisicao(req, res)
 })
+
+const socketServer = new WebSocketServer({ server })
+
+socketServer.on('connection', (ws, req) => {
+    ws.id = req.headers['sec-websocket-key']
+    console.log(`Novo cliente (${ws.id}) conectado`)
+
+    ws.on('close', () => console.log(`Cliente ${ws.id} desconectado`))
+
+    ws.on('message', (data, isBinary) => {
+        console.log('received: %s', data)
+        socketServer.clients.forEach(function each(client) {
+            if (client !== ws && client.readyState === WebSocket.OPEN) client.send(data, { binary: isBinary })
+        })
+      })
+
+    ws.onerror = function () {
+        console.log('Websocket erro')
+    }
+})
   
 server.listen(8080, () => {
-    console.log(`${new Date()} Server is listening on port 8080`)
+    console.log('listening 8080')
 })

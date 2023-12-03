@@ -1,3 +1,5 @@
+const ws = new WebSocket('ws://localhost:8080')
+
 const canvas = document.querySelector("canvas"),
 botoesFerramentas = document.querySelectorAll(".ferramenta"),
 preencherCor = document.querySelector("#preencher-cor"),
@@ -133,7 +135,4 @@ canvas.addEventListener("mousedown", comecaDesenho)
 canvas.addEventListener("mousemove", desenhando)
 canvas.addEventListener("mouseup", () => estaDesenhando = false)
 
-ws.onmessage = (event) => {
-    const data = JSON.parse(event.data)
-    console.log(data)
-}
+ws.onopen = () => ws.send('Conectei')
