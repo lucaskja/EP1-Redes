@@ -1,6 +1,6 @@
 const { createServer } = require('node:http')
 const { readFile } = require('node:fs')
-const WebSocket = require('ws')
+const { WebSocketServer } = require('ws')
 
 const responde = (res, tipoConteudo, conteudo) => {
     res.writeHead(200, {
@@ -11,12 +11,12 @@ const responde = (res, tipoConteudo, conteudo) => {
     res.end()
 }
 
-respondeComNaoEncontrado = (res) => {
+const respondeComNaoEncontrado = (res) => {
     res.writeHead(404)
     res.end()
 }
 
-lidaRequisicao = (req, res) => {
+const lidaRequisicao = (req, res) => {
     switch (req.url) {
         case '/':
             readFile('src/pages/index.html', 'utf-8', (err, data) => {
@@ -75,33 +75,14 @@ lidaRequisicao = (req, res) => {
             })
             break
         default:
-            respondeComNaoEncontrado(res)
+            respondeComNaoEncontrado(res)   
     }
 }
 
 const server = createServer((req, res) => {
     lidaRequisicao(req, res)
-  })
+})
   
-const wss = new WebSocket.Server({ noServer: true })
-
-wss.on('connection', (ws) => {
-    ws.on('message', (message) => {
-        // Broadcast the message to all connected clients
-        wss.clients.forEach((client) => {
-        if (client !== ws && client.readyState === WebSocket.OPEN) {
-            client.send(message)
-        }
-        })
-    })
-})
-
-server.on('upgrade', (request, socket, head) => {
-    wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit('connection', ws, request)
-    })
-})
-
 server.listen(8080, () => {
     console.log(`${new Date()} Server is listening on port 8080`)
 })

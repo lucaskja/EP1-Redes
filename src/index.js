@@ -71,12 +71,16 @@ const desenhando = (e) => {
     if(!estaDesenhando) return // if estaDesenhando is false return from here
     contextoCanvas.putImageData(instante, 0, 0) // adding copied canvas data on to this canvas
 
-    if(ferramentaSelecionada === "pincel" || ferramentaSelecionada === "borracha") {
+    if(ferramentaSelecionada === "pincel") {
         // if selected tool is eraser then set strokeStyle to white 
         // to paint white color on to the existing canvas content else set the stroke color to selected color
-        contextoCanvas.strokeStyle = ferramentaSelecionada === "borracha" ? "#fff" : corSelecionada
+        contextoCanvas.strokeStyle = corSelecionada
         contextoCanvas.lineTo(e.offsetX, e.offsetY) // creating line according to the mouse pointer
         contextoCanvas.stroke() // drawing/filling line with color
+    } else if (ferramentaSelecionada === "borracha") {
+        contextoCanvas.strokeStyle = "#fff"
+        contextoCanvas.lineTo(e.offsetX, e.offsetY)
+        contextoCanvas.stroke()
     } else if(ferramentaSelecionada === "retangulo"){
         desenhaRetangulo(e)
     } else if(ferramentaSelecionada === "circulo"){
@@ -128,3 +132,8 @@ salvarImagem.addEventListener("click", () => {
 canvas.addEventListener("mousedown", comecaDesenho)
 canvas.addEventListener("mousemove", desenhando)
 canvas.addEventListener("mouseup", () => estaDesenhando = false)
+
+ws.onmessage = (event) => {
+    const data = JSON.parse(event.data)
+    console.log(data)
+}
