@@ -92,7 +92,7 @@ socketServer.on('connection', (ws, req) => {
     ws.on('close', () => console.log(`Cliente ${ws.id} desconectado`))
 
     ws.on('message', (data) => {
-        console.log('received: %s', data)
+        console.log('Recebido: %s', data)
         socketServer.clients.forEach(function each(client) {
             if (client !== ws && client.readyState === WebSocket.OPEN) client.send(data)
         })
@@ -104,5 +104,5 @@ socketServer.on('connection', (ws, req) => {
 })
   
 server.listen(8080, () => {
-    console.log('listening 8080')
+    console.log('Ouvindo mensagens na porta 8080')
 })
