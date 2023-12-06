@@ -15,7 +15,6 @@ isDrawing = false,
 selectedTool = "brush",
 brushWidth = 5,
 selectedColor = "#000";
-isShape = false;
 
 const setCanvasBackground = () => {
     ctx.fillStyle = "#fff";
@@ -29,27 +28,30 @@ window.addEventListener("load", () => {
     setCanvasBackground();
 });
 
-const drawRect = (e) => {
-    if(!fillColor.checked) {
-        return ctx.strokeRect(e.offsetX, e.offsetY, prevMouseX - e.offsetX, prevMouseY - e.offsetY);
-    }
-    ctx.fillRect(e.offsetX, e.offsetY, prevMouseX - e.offsetX, prevMouseY - e.offsetY);
+const drawRect = (e, prev = {x: prevMouseX, y: prevMouseY}, fill = fillColor.checked) => {
+    fill ? ctx.fillRect(prev.x, prev.y, e.offsetX - prev.x, e.offsetY - prev.y) : ctx.strokeRect(prev.x, prev.y, e.offsetX - prev.x, e.offsetY - prev.y);
 }
 
-const drawCircle = (e) => {
+const drawCircle = (e, prev = {x: prevMouseX, y: prevMouseY}, fill = fillColor.checked) => {
     ctx.beginPath();
-    let radius = Math.sqrt(Math.pow((prevMouseX - e.offsetX), 2) + Math.pow((prevMouseY - e.offsetY), 2));
-    ctx.arc(prevMouseX, prevMouseY, radius, 0, 2 * Math.PI);
-    fillColor.checked ? ctx.fill() : ctx.stroke();
+    let radius = Math.sqrt(Math.pow((prev.x - e.offsetX), 2) + Math.pow((prev.y - e.offsetY), 2));
+    ctx.arc(prev.x, prev.y, radius, 0, 2 * Math.PI);
+    fill ? ctx.fill() : ctx.stroke();
 }
 
-const drawTriangle = (e) => {
+const drawTriangle = (e, prev = {x: prevMouseX, y: prevMouseY}, fill = fillColor.checked) => {
     ctx.beginPath();
-    ctx.moveTo(prevMouseX, prevMouseY);
+    ctx.moveTo(prev.x, prev.y);
     ctx.lineTo(e.offsetX, e.offsetY);
-    ctx.lineTo(prevMouseX * 2 - e.offsetX, e.offsetY);
+    ctx.lineTo(prev.x * 2 - e.offsetX, e.offsetY);
     ctx.closePath();
-    fillColor.checked ? ctx.fill() : ctx.stroke();
+    fill ? ctx.fill() : ctx.stroke();
+}
+
+function drawBrush(e, color = selectedColor, tool = selectedTool) {
+    ctx.strokeStyle = tool === "eraser" ? "#fff" : color;
+    ctx.lineTo(e.offsetX, e.offsetY);
+    ctx.stroke();
 }
 
 const startDraw = (e) => {
@@ -65,34 +67,28 @@ const startDraw = (e) => {
 
 const drawing = (e) => {
     if(!isDrawing) return;
-    mainCoords = {x: e.offsetX, y: e.offsetY}
+    mainCoords = {offsetX: e.offsetX, offsetY: e.offsetY}
     ctx.putImageData(snapshot, 0, 0);
     
     if(selectedTool === "brush" || selectedTool === "eraser") {
-        isShape = false;
-        ctx.strokeStyle = selectedTool === "eraser" ? "#fff" : selectedColor;
-        ctx.lineTo(e.offsetX, e.offsetY);
-        ctx.stroke();
+        drawBrush(e);
         ws.send(JSON.stringify({tool: selectedTool, coords: mainCoords, color: ctx.strokeStyle, width: ctx.lineWidth}));
     } else if(selectedTool === "rectangle"){
-        isShape = true;
         drawRect(e);
     } else if(selectedTool === "circle"){
-        isShape = true;
         drawCircle(e);
     } else if(selectedTool === "triangle"){
-        isShape = true;
         drawTriangle(e);
     }
 }
 
 const finishDraw = (e) => {
-    if(!isShape) {
+    if(selectedTool === "brush" || selectedTool === "eraser") {
         ctx.closePath();
         ctx.beginPath();
         ws.send(JSON.stringify({tool: "finish"}));
-    } else{
-        ws.send(JSON.stringify({tool: selectedTool, coords: {x: e.offsetX, y: e.offsetY}, prev: {x: prevMouseX, y: prevMouseY}, color: ctx.fillStyle, width: ctx.lineWidth, fill: fillColor.checked}));
+    } else if(selectedTool === "rectangle" || selectedTool === "circle" || selectedTool === "triangle"){
+        ws.send(JSON.stringify({tool: selectedTool, coords: {offsetX: e.offsetX, offsetY: e.offsetY}, prev: {x: prevMouseX, y: prevMouseY}, color: ctx.fillStyle, width: ctx.lineWidth, fill: fillColor.checked}));
     }
     isDrawing = false;
 }
@@ -146,25 +142,14 @@ ws.onmessage = (message) => {
         ctx.strokeStyle = messageBody.color;
         ctx.fillStyle = messageBody.color;
         if(messageBody.tool === "brush" || messageBody.tool === "eraser") {
-            ctx.strokeStyle = messageBody.tool === "eraser" ? "#fff" : ctx.strokeStyle;
-            ctx.lineTo(messageBody.coords.x, messageBody.coords.y);
-            ctx.stroke();
+            drawBrush(messageBody.coords, messageBody.color, messageBody.tool);
         } else if(messageBody.tool === "rectangle"){
-            ctx.strokeRect(messageBody.coords.x, messageBody.coords.y, messageBody.prev.x - messageBody.coords.x, messageBody.prev.y - messageBody.coords.y);
-            messageBody.fill ? ctx.fillRect(messageBody.coords.x, messageBody.coords.y, messageBody.prev.x - messageBody.coords.x, messageBody.prev.y - messageBody.coords.y) : ctx.strokeRect(messageBody.coords.x, messageBody.coords.y, messageBody.prev.x - messageBody.coords.x, messageBody.prev.y - messageBody.coords.y);
+            drawRect(messageBody.coords, messageBody.prev, messageBody.fill);
         } else if(messageBody.tool === "circle"){
-            ctx.beginPath();
-            let radius = Math.sqrt(Math.pow((messageBody.prev.x - messageBody.coords.x), 2) + Math.pow((messageBody.prev.y - messageBody.coords.y), 2));
-            ctx.arc(messageBody.prev.x, messageBody.prev.y, radius, 0, 2 * Math.PI);
-            messageBody.fill ? ctx.fill() : ctx.stroke();
+            drawCircle(messageBody.coords, messageBody.prev, messageBody.fill);
         }
         else if(messageBody.tool === "triangle"){
-            ctx.beginPath();
-            ctx.moveTo(messageBody.prev.x, messageBody.prev.y);
-            ctx.lineTo(messageBody.coords.x, messageBody.coords.y);
-            ctx.lineTo(messageBody.prev.x * 2 - messageBody.coords.x, messageBody.coords.y);
-            ctx.closePath();
-            messageBody.fill ? ctx.fill() : ctx.stroke();
+            drawTriangle(messageBody.coords, messageBody.prev, messageBody.fill);
         } else if(messageBody.tool === "finish"){
             ctx.closePath();
             ctx.beginPath();
