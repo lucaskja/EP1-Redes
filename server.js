@@ -2,7 +2,7 @@ const { createServer } = require('node:http')
 const { readFile } = require('node:fs')
 const { WebSocketServer, WebSocket } = require('ws')
 
-const responde = (res, tipoConteudo, conteudo) => {
+const respond = (res, tipoConteudo, conteudo) => {
     res.writeHead(200, {
         'Content-Type': tipoConteudo,
         'Content-Length': conteudo.length
@@ -11,76 +11,76 @@ const responde = (res, tipoConteudo, conteudo) => {
     res.end()
 }
 
-const respondeComNaoEncontrado = (res) => {
+const handleWithNotFound = (res) => {
     res.writeHead(404)
     res.end()
 }
 
-const lidaRequisicao = (req, res) => {
+const handleRequest = (req, res) => {
     switch (req.url) {
         case '/':
             readFile('src/pages/index.html', 'utf-8', (err, data) => {
                 if (err) throw err
 
-                return responde(res, 'text/html', data)
+                return respond(res, 'text/html', data)
             })
             break
         case '/index.js':
             readFile('src/index.js', 'utf-8', (err, data) => {
                 if (err) throw err
 
-                return responde(res, 'text/html', data)
+                return respond(res, 'text/html', data)
             })
             break
         case '/styles/style.css':
             readFile('src/styles/style.css', 'utf-8', (err, data) => {
                 if (err) throw err
 
-                return responde(res, 'text/css', data)
+                return respond(res, 'text/css', data)
             })
             break
-        case '/icons/retangulo.svg':
-            readFile('icons/retangulo.svg', 'utf-8', (err, data) => {
+        case '/icons/rectangle.svg':
+            readFile('icons/rectangle.svg', 'utf-8', (err, data) => {
                 if (err) throw err
 
-                return responde(res, 'image/svg+xml', data)
+                return respond(res, 'image/svg+xml', data)
             })
             break
-        case '/icons/circulo.svg':
-            readFile('icons/circulo.svg', 'utf-8', (err, data) => {
+        case '/icons/circle.svg':
+            readFile('icons/circle.svg', 'utf-8', (err, data) => {
                 if (err) throw err
 
-                return responde(res, 'image/svg+xml', data)
+                return respond(res, 'image/svg+xml', data)
             })
             break
-        case '/icons/triangulo.svg':
-            readFile('icons/triangulo.svg', 'utf-8', (err, data) => {
+        case '/icons/triangle.svg':
+            readFile('icons/triangle.svg', 'utf-8', (err, data) => {
                 if (err) throw err
 
-                return responde(res, 'image/svg+xml', data)
+                return respond(res, 'image/svg+xml', data)
             })
             break
-        case '/icons/pincel.svg':
-            readFile('icons/pincel.svg', 'utf-8', (err, data) => {
+        case '/icons/brush.svg':
+            readFile('icons/brush.svg', 'utf-8', (err, data) => {
                 if (err) throw err
 
-                return responde(res, 'image/svg+xml', data)
+                return respond(res, 'image/svg+xml', data)
             })
             break
-        case '/icons/borracha.svg':
-            readFile('icons/borracha.svg', 'utf-8', (err, data) => {
+        case '/icons/eraser.svg':
+            readFile('icons/eraser.svg', 'utf-8', (err, data) => {
                 if (err) throw err
 
-                return responde(res, 'image/svg+xml', data)
+                return respond(res, 'image/svg+xml', data)
             })
             break
         default:
-            respondeComNaoEncontrado(res)   
+            handleWithNotFound(res)   
     }
 }
 
 const server = createServer((req, res) => {
-    lidaRequisicao(req, res)
+    handleRequest(req, res)
 })
 
 const socketServer = new WebSocketServer({ server })
@@ -91,10 +91,10 @@ socketServer.on('connection', (ws, req) => {
 
     ws.on('close', () => console.log(`Cliente ${ws.id} desconectado`))
 
-    ws.on('message', (data, isBinary) => {
+    ws.on('message', (data) => {
         console.log('received: %s', data)
         socketServer.clients.forEach(function each(client) {
-            if (client !== ws && client.readyState === WebSocket.OPEN) client.send(data, { binary: isBinary })
+            if (client !== ws && client.readyState === WebSocket.OPEN) client.send(data)
         })
       })
 

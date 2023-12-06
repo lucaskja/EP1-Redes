@@ -1,138 +1,136 @@
 const ws = new WebSocket('ws://localhost:8080')
 
 const canvas = document.querySelector("canvas"),
-botoesFerramentas = document.querySelectorAll(".ferramenta"),
-preencherCor = document.querySelector("#preencher-cor"),
-controleTamanho = document.querySelector("#controle-tamanho"),
-corBotoes = document.querySelectorAll(".cores .opcao"),
-selecionaCor = document.querySelector("#seleciona-cor"),
-limparCanvas = document.querySelector(".limpar-canvas"),
-salvarImagem = document.querySelector(".salvar-imagem"),
-contextoCanvas = canvas.getContext("2d")
+toolBtns = document.querySelectorAll(".tool"),
+fillColor = document.querySelector("#fill-color"),
+sizeSlider = document.querySelector("#size-slider"),
+colorBtns = document.querySelectorAll(".colors .option"),
+colorPicker = document.querySelector("#color-picker"),
+clearCanvas = document.querySelector(".clear-canvas"),
+saveImg = document.querySelector(".save-img"),
+ctx = canvas.getContext("2d");
 
 // global variables with default value
-let mouseXAnterior, mouseYAnterior, instante,
-estaDesenhando = false,
-ferramentaSelecionada = "pincel",
-larguraPincel = 5,
-corSelecionada = "#000"
+let prevMouseX, prevMouseY, snapshot,
+isDrawing = false,
+selectedTool = "brush",
+brushWidth = 5,
+selectedColor = "#000";
 
-const colocarFundoCanva = () => {
+const setCanvasBackground = () => {
     // setting whole canvas background to white, so the downloaded img background will be white
-    contextoCanvas.fillStyle = "#fff"
-    contextoCanvas.fillRect(0, 0, canvas.width, canvas.height)
-    contextoCanvas.fillStyle = corSelecionada // setting fillstyle back to the corSelecionada, it'll be the brush color
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = selectedColor; // setting fillstyle back to the selectedColor, it'll be the brush color
 }
 
 window.addEventListener("load", () => {
     // setting canvas width/height.. offsetwidth/height returns viewable width/height of an element
-    canvas.width = canvas.offsetWidth
-    canvas.height = canvas.offsetHeight
-    colocarFundoCanva()
-})
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    setCanvasBackground();
+});
 
-const desenhaRetangulo = (e) => {
-    // if preencherCor isn't checked draw a rect with border else draw rect with background
-    if(!preencherCor.checked) {
+const drawRect = (e) => {
+    // if fillColor isn't checked draw a rect with border else draw rect with background
+    if(!fillColor.checked) {
         // creating circle according to the mouse pointer
-        return contextoCanvas.strokeRect(e.offsetX, e.offsetY, mouseXAnterior - e.offsetX, mouseYAnterior - e.offsetY)
+        return ctx.strokeRect(e.offsetX, e.offsetY, prevMouseX - e.offsetX, prevMouseY - e.offsetY);
     }
-    contextoCanvas.fillRect(e.offsetX, e.offsetY, mouseXAnterior - e.offsetX, mouseYAnterior - e.offsetY)
+    ctx.fillRect(e.offsetX, e.offsetY, prevMouseX - e.offsetX, prevMouseY - e.offsetY);
 }
 
-const desenhaCirculo = (e) => {
-    contextoCanvas.beginPath() // creating new path to draw circle
+const drawCircle = (e) => {
+    ctx.beginPath(); // creating new path to draw circle
     // getting radius for circle according to the mouse pointer
-    let radius = Math.sqrt(Math.pow((mouseXAnterior - e.offsetX), 2) + Math.pow((mouseYAnterior - e.offsetY), 2))
-    contextoCanvas.arc(mouseXAnterior, mouseYAnterior, radius, 0, 2 * Math.PI) // creating circle according to the mouse pointer
-    preencherCor.checked ? contextoCanvas.fill() : contextoCanvas.stroke() // if preencherCor is checked fill circle else draw border circle
+    let radius = Math.sqrt(Math.pow((prevMouseX - e.offsetX), 2) + Math.pow((prevMouseY - e.offsetY), 2));
+    ctx.arc(prevMouseX, prevMouseY, radius, 0, 2 * Math.PI); // creating circle according to the mouse pointer
+    fillColor.checked ? ctx.fill() : ctx.stroke(); // if fillColor is checked fill circle else draw border circle
 }
 
-const desenhaTriangulo = (e) => {
-    contextoCanvas.beginPath() // creating new path to draw circle
-    contextoCanvas.moveTo(mouseXAnterior, mouseYAnterior) // moving triangle to the mouse pointer
-    contextoCanvas.lineTo(e.offsetX, e.offsetY) // creating first line according to the mouse pointer
-    contextoCanvas.lineTo(mouseXAnterior * 2 - e.offsetX, e.offsetY) // creating bottom line of triangle
-    contextoCanvas.closePath() // closing path of a triangle so the third line draw automatically
-    preencherCor.checked ? contextoCanvas.fill() : contextoCanvas.stroke() // if preencherCor is checked fill triangle else draw border
+const drawTriangle = (e) => {
+    ctx.beginPath(); // creating new path to draw circle
+    ctx.moveTo(prevMouseX, prevMouseY); // moving triangle to the mouse pointer
+    ctx.lineTo(e.offsetX, e.offsetY); // creating first line according to the mouse pointer
+    ctx.lineTo(prevMouseX * 2 - e.offsetX, e.offsetY); // creating bottom line of triangle
+    ctx.closePath(); // closing path of a triangle so the third line draw automatically
+    fillColor.checked ? ctx.fill() : ctx.stroke(); // if fillColor is checked fill triangle else draw border
 }
 
-const comecaDesenho = (e) => {
-    estaDesenhando = true
-    mouseXAnterior = e.offsetX // passing current mouseX position as mouseXAnterior value
-    mouseYAnterior = e.offsetY // passing current mouseY position as mouseYAnterior value
-    contextoCanvas.beginPath() // creating new path to draw
-    contextoCanvas.lineWidth = larguraPincel // passing brushSize as line width
-    contextoCanvas.strokeStyle = corSelecionada // passing corSelecionada as stroke style
-    contextoCanvas.fillStyle = corSelecionada // passing corSelecionada as fill style
-    // copying canvas data & passing as instante value.. this avoids dragging the image
-    instante = contextoCanvas.getImageData(0, 0, canvas.width, canvas.height)
+const startDraw = (e) => {
+    isDrawing = true;
+    prevMouseX = e.offsetX; // passing current mouseX position as prevMouseX value
+    prevMouseY = e.offsetY; // passing current mouseY position as prevMouseY value
+    ctx.beginPath(); // creating new path to draw
+    ctx.lineWidth = brushWidth; // passing brushSize as line width
+    ctx.strokeStyle = selectedColor; // passing selectedColor as stroke style
+    ctx.fillStyle = selectedColor; // passing selectedColor as fill style
+    // copying canvas data & passing as snapshot value.. this avoids dragging the image
+    snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
 }
 
-const desenhando = (e) => {
-    if(!estaDesenhando) return // if estaDesenhando is false return from here
-    contextoCanvas.putImageData(instante, 0, 0) // adding copied canvas data on to this canvas
+const drawing = (e) => {
+    if(!isDrawing) return; // if isDrawing is false return from here
+    ctx.putImageData(snapshot, 0, 0); // adding copied canvas data on to this canvas
 
-    if(ferramentaSelecionada === "pincel") {
+    if(selectedTool === "brush" || selectedTool === "eraser") {
         // if selected tool is eraser then set strokeStyle to white 
         // to paint white color on to the existing canvas content else set the stroke color to selected color
-        contextoCanvas.strokeStyle = corSelecionada
-        contextoCanvas.lineTo(e.offsetX, e.offsetY) // creating line according to the mouse pointer
-        contextoCanvas.stroke() // drawing/filling line with color
-    } else if (ferramentaSelecionada === "borracha") {
-        contextoCanvas.strokeStyle = "#fff"
-        contextoCanvas.lineTo(e.offsetX, e.offsetY)
-        contextoCanvas.stroke()
-    } else if(ferramentaSelecionada === "retangulo"){
-        desenhaRetangulo(e)
-    } else if(ferramentaSelecionada === "circulo"){
-        desenhaCirculo(e)
+        ctx.strokeStyle = selectedTool === "eraser" ? "#fff" : selectedColor;
+        ctx.lineTo(e.offsetX, e.offsetY); // creating line according to the mouse pointer
+        ctx.stroke(); // drawing/filling line with color
+    } else if(selectedTool === "rectangle"){
+        drawRect(e);
+    } else if(selectedTool === "circle"){
+        drawCircle(e);
     } else {
-        desenhaTriangulo(e)
+        drawTriangle(e);
     }
 }
 
-botoesFerramentas.forEach(btn => {
+toolBtns.forEach(btn => {
     btn.addEventListener("click", () => { // adding click event to all tool option
         // removing active class from the previous option and adding on current clicked option
-        document.querySelector(".opcoes .active").classList.remove("active")
-        btn.classList.add("active")
-        ferramentaSelecionada = btn.id
-    })
-})
+        document.querySelector(".options .active").classList.remove("active");
+        btn.classList.add("active");
+        selectedTool = btn.id;
+    });
+});
 
-controleTamanho.addEventListener("change", () => larguraPincel = controleTamanho.value) // passing slider value as brushSize
+sizeSlider.addEventListener("change", () => brushWidth = sizeSlider.value); // passing slider value as brushSize
 
-corBotoes.forEach(btn => {
+colorBtns.forEach(btn => {
     btn.addEventListener("click", () => { // adding click event to all color button
         // removing selected class from the previous option and adding on current clicked option
-        document.querySelector(".opcoes .selected").classList.remove("selected")
-        btn.classList.add("selected")
-        // passing selected btn background color as corSelecionada value
-        corSelecionada = window.getComputedStyle(btn).getPropertyValue("background-color")
-    })
-})
+        document.querySelector(".options .selected").classList.remove("selected");
+        btn.classList.add("selected");
+        // passing selected btn background color as selectedColor value
+        selectedColor = window.getComputedStyle(btn).getPropertyValue("background-color");
+    });
+});
 
-selecionaCor.addEventListener("change", () => {
+colorPicker.addEventListener("change", () => {
     // passing picked color value from color picker to last color btn background
-    selecionaCor.parentElement.style.background = selecionaCor.value
-    selecionaCor.parentElement.click()
-})
+    colorPicker.parentElement.style.background = colorPicker.value;
+    colorPicker.parentElement.click();
+});
 
-limparCanvas.addEventListener("click", () => {
-    contextoCanvas.clearRect(0, 0, canvas.width, canvas.height) // clearing whole canvas
-    colocarFundoCanva()
-})
+clearCanvas.addEventListener("click", () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // clearing whole canvas
+    setCanvasBackground();
+});
 
-salvarImagem.addEventListener("click", () => {
-    const link = document.createElement("a") // creating <a> element
-    link.download = `${Date.now()}.jpg` // passing current date as link download value
-    link.href = canvas.toDataURL() // passing canvasData as link href value
-    link.click() // clicking link to download image
-})
+saveImg.addEventListener("click", () => {
+    const link = document.createElement("a"); // creating <a> element
+    link.download = `${Date.now()}.jpg`; // passing current date as link download value
+    link.href = canvas.toDataURL(); // passing canvasData as link href value
+    link.click(); // clicking link to download image
+});
 
-canvas.addEventListener("mousedown", comecaDesenho)
-canvas.addEventListener("mousemove", desenhando)
-canvas.addEventListener("mouseup", () => estaDesenhando = false)
+canvas.addEventListener("mousedown", startDraw);
+canvas.addEventListener("mousemove", drawing);
+canvas.addEventListener("mouseup", () => isDrawing = false);
 
-ws.onopen = () => ws.send('Conectei')
+ws.onmessage = (message) => {
+    console.log(message.data)
+} 
