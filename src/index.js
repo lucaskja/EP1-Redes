@@ -46,8 +46,8 @@ const drawTriangle = (e, prev = {x: prevMouseX, y: prevMouseY}, fill = fillColor
     ctx.moveTo(prev.x, prev.y)
     ctx.lineTo(e.offsetX, e.offsetY)
     ctx.lineTo(prev.x * 2 - e.offsetX, e.offsetY)
-    fill ? ctx.fill() : ctx.stroke()
     ctx.closePath()
+    fill ? ctx.fill() : ctx.stroke()
     ctx.beginPath()
 }
 
