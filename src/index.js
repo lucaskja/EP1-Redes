@@ -37,6 +37,8 @@ const drawCircle = (e, prev = {x: prevMouseX, y: prevMouseY}, fill = fillColor.c
     let radius = Math.sqrt(Math.pow((prev.x - e.offsetX), 2) + Math.pow((prev.y - e.offsetY), 2))
     ctx.arc(prev.x, prev.y, radius, 0, 2 * Math.PI)
     fill ? ctx.fill() : ctx.stroke()
+    ctx.closePath()
+    ctx.beginPath()
 }
 
 const drawTriangle = (e, prev = {x: prevMouseX, y: prevMouseY}, fill = fillColor.checked) => {
@@ -44,8 +46,9 @@ const drawTriangle = (e, prev = {x: prevMouseX, y: prevMouseY}, fill = fillColor
     ctx.moveTo(prev.x, prev.y)
     ctx.lineTo(e.offsetX, e.offsetY)
     ctx.lineTo(prev.x * 2 - e.offsetX, e.offsetY)
-    ctx.closePath()
     fill ? ctx.fill() : ctx.stroke()
+    ctx.closePath()
+    ctx.beginPath()
 }
 
 function drawBrush(e, color = selectedColor, tool = selectedTool) {
